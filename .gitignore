@@ -1,0 +1,4 @@
+.build/
+.swiftpm/
+ClipDisplay.app/
+.DS_Store
