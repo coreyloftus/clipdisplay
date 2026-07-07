@@ -9,14 +9,16 @@ A lightweight native macOS menu-bar app that displays your clipboard text in a f
 
 ## Hotkeys (global, no Accessibility permission needed)
 
-| Hotkey | Action |
+| Default | Action |
 |---|---|
-| `⌘⇧V` | Read clipboard → show styled overlay |
+| `⌥⇧Space` | Read clipboard → show styled overlay |
 | `⌘⇧H` | Toggle overlay visibility |
+
+Both are rebindable in Settings: click the shortcut, then press any combination that includes `⌘`, `⌥`, or `⌃` (press `⎋` to cancel).
 
 ## Settings
 
-Open **Settings…** from the menu-bar icon. All changes apply to the overlay live: font family, size, bold, text color, background color + opacity, alignment, padding, overlay width/height, and a reset-position button.
+Open **Settings…** from the menu-bar icon. All changes apply to the overlay live: font family, size, bold, text color, background color + opacity, alignment, padding, overlay width/height, hotkey bindings, and a reset-position button.
 
 ## Build & run
 

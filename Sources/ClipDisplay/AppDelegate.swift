@@ -1,5 +1,4 @@
 import AppKit
-import Carbon.HIToolbox
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -8,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var overlay: OverlayPanel!
     private var statusItem: NSStatusItem!
     private var settingsWindow: NSWindow?
+    private var showClipboardItem: NSMenuItem?
+    private var showHideItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         overlay = OverlayPanel(settings: settings)
@@ -20,6 +21,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.overlay.centerOnMainScreen()
             self.settings.saveOrigin(self.overlay.frame.origin)
+        }
+        settings.onHotKeysChange = { [weak self] in
+            self?.registerHotKeys()
+        }
+
+        // Suspend global hotkeys while a settings recorder is capturing keys,
+        // so the currently bound combo can itself be re-recorded.
+        NotificationCenter.default.addObserver(forName: .hotKeyRecordingChanged,
+                                               object: nil,
+                                               queue: .main) { [weak self] note in
+            guard let self else { return }
+            if note.userInfo?["recording"] as? Bool == true {
+                self.hotKeys.unregisterAll()
+            } else {
+                self.registerHotKeys()
+            }
         }
 
         NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification,
@@ -46,12 +63,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let menu = NSMenu()
 
+        let showClip = NSMenuItem(title: "Show Clipboard",
+                                  action: #selector(showClipboard),
+                                  keyEquivalent: "")
+        showClip.target = self
+        menu.addItem(showClip)
+        showClipboardItem = showClip
+
         let showHide = NSMenuItem(title: "Show/Hide Overlay",
                                   action: #selector(toggleOverlay),
-                                  keyEquivalent: "h")
-        showHide.keyEquivalentModifierMask = [.command, .shift]
+                                  keyEquivalent: "")
         showHide.target = self
         menu.addItem(showHide)
+        showHideItem = showHide
 
         let openSettings = NSMenuItem(title: "Settings…",
                                       action: #selector(showSettings),
@@ -72,19 +96,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Hotkeys
 
     private func registerHotKeys() {
-        // ⌘⇧V — read clipboard, update overlay, show it
-        hotKeys.register(keyCode: UInt32(kVK_ANSI_V), modifiers: HotKeys.cmdShift) { [weak self] in
+        hotKeys.unregisterAll()
+        // Default ⌥⇧Space — read clipboard, update overlay, show it
+        hotKeys.register(settings.showClipboardHotKey) { [weak self] in
             self?.showClipboard()
         }
-        // ⌘⇧H — toggle overlay visibility
-        hotKeys.register(keyCode: UInt32(kVK_ANSI_H), modifiers: HotKeys.cmdShift) { [weak self] in
+        // Default ⌘⇧H — toggle overlay visibility
+        hotKeys.register(settings.toggleOverlayHotKey) { [weak self] in
             self?.toggleOverlay()
         }
+        updateMenuKeyEquivalents()
+    }
+
+    private func updateMenuKeyEquivalents() {
+        applyKeyEquivalent(settings.showClipboardHotKey, to: showClipboardItem)
+        applyKeyEquivalent(settings.toggleOverlayHotKey, to: showHideItem)
+    }
+
+    private func applyKeyEquivalent(_ combo: HotKeyCombo, to item: NSMenuItem?) {
+        item?.keyEquivalent = combo.keyEquivalentCharacter ?? ""
+        item?.keyEquivalentModifierMask = combo.cocoaModifiers
     }
 
     // MARK: - Actions
 
-    private func showClipboard() {
+    @objc private func showClipboard() {
         let pasteboard = NSPasteboard.general
         if let text = pasteboard.string(forType: .string), !text.isEmpty {
             overlay.update(text: text)

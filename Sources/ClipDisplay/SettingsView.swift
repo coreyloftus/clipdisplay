@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 struct SettingsView: View {
@@ -98,15 +99,85 @@ struct SettingsView: View {
             }
 
             Section {
-                LabeledContent("Show clipboard", value: "⌘⇧V")
-                LabeledContent("Toggle overlay", value: "⌘⇧H")
+                HotKeyRecorderRow(title: "Show clipboard",
+                                  combo: $settings.showClipboardHotKey,
+                                  conflictingCombo: settings.toggleOverlayHotKey)
+                HotKeyRecorderRow(title: "Toggle overlay",
+                                  combo: $settings.toggleOverlayHotKey,
+                                  conflictingCombo: settings.showClipboardHotKey)
+                Button("Reset Hotkeys to Defaults") {
+                    settings.resetHotKeys()
+                }
             } header: {
                 Text("Hotkeys")
             } footer: {
-                Text("Changes apply to the overlay immediately.")
+                Text("Click a shortcut, then press a new key combination including ⌘, ⌥, or ⌃. Press ⎋ to cancel. Changes apply immediately.")
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 440, minHeight: 520)
+        .frame(minWidth: 440, minHeight: 560)
+    }
+}
+
+/// Click-to-record shortcut field. While recording, global hotkeys are
+/// suspended (via .hotKeyRecordingChanged) so the current binding can be
+/// captured and re-assigned.
+struct HotKeyRecorderRow: View {
+    let title: String
+    @Binding var combo: HotKeyCombo
+    let conflictingCombo: HotKeyCombo
+
+    @State private var isRecording = false
+    @State private var keyMonitor: Any?
+
+    var body: some View {
+        LabeledContent(title) {
+            Button {
+                isRecording ? stopRecording() : startRecording()
+            } label: {
+                Text(isRecording ? "Press shortcut…" : combo.displayString)
+                    .frame(minWidth: 110)
+            }
+            .foregroundStyle(isRecording ? Color.accentColor : Color.primary)
+        }
+        .onDisappear { stopRecording() }
+    }
+
+    private func startRecording() {
+        isRecording = true
+        postRecordingState(true)
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            handle(event)
+            return nil // swallow the keystroke
+        }
+    }
+
+    private func handle(_ event: NSEvent) {
+        if event.keyCode == UInt16(kVK_Escape) {
+            stopRecording()
+            return
+        }
+        let candidate = HotKeyCombo(keyCode: UInt32(event.keyCode),
+                                    modifiers: HotKeyCombo.carbonModifiers(from: event.modifierFlags))
+        guard candidate.hasActionModifier, candidate != conflictingCombo else {
+            NSSound.beep()
+            return
+        }
+        combo = candidate
+        stopRecording()
+    }
+
+    private func stopRecording() {
+        guard isRecording || keyMonitor != nil else { return }
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
+        isRecording = false
+        postRecordingState(false)
+    }
+
+    private func postRecordingState(_ recording: Bool) {
+        NotificationCenter.default.post(name: .hotKeyRecordingChanged,
+                                        object: nil,
+                                        userInfo: ["recording": recording])
     }
 }

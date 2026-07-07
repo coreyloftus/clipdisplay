@@ -30,6 +30,7 @@ enum TextAlignmentSetting: Int, CaseIterable, Identifiable {
 final class SettingsModel: ObservableObject {
     var onChange: (() -> Void)?
     var onResetPosition: (() -> Void)?
+    var onHotKeysChange: (() -> Void)?
 
     @Published var fontFamily: String = Defaults.fontFamily { didSet { changed() } }
     @Published var fontSize: Double = Defaults.fontSize { didSet { changed() } }
@@ -41,6 +42,8 @@ final class SettingsModel: ObservableObject {
     @Published var padding: Double = Defaults.padding { didSet { changed() } }
     @Published var overlayWidth: Double = Defaults.overlayWidth { didSet { changed() } }
     @Published var overlayHeight: Double = Defaults.overlayHeight { didSet { changed() } }
+    @Published var showClipboardHotKey: HotKeyCombo = .defaultShowClipboard { didSet { hotKeysChanged() } }
+    @Published var toggleOverlayHotKey: HotKeyCombo = .defaultToggleOverlay { didSet { hotKeysChanged() } }
 
     enum Defaults {
         static let fontFamily = "Helvetica Neue"
@@ -69,6 +72,10 @@ final class SettingsModel: ObservableObject {
         static let hasOrigin = "panelHasOrigin"
         static let originX = "panelOriginX"
         static let originY = "panelOriginY"
+        static let showHotKeyCode = "showHotKeyCode"
+        static let showHotKeyModifiers = "showHotKeyModifiers"
+        static let toggleHotKeyCode = "toggleHotKeyCode"
+        static let toggleHotKeyModifiers = "toggleHotKeyModifiers"
     }
 
     private let defaults = UserDefaults.standard
@@ -85,6 +92,17 @@ final class SettingsModel: ObservableObject {
         onChange?()
     }
 
+    private func hotKeysChanged() {
+        guard !isLoading else { return }
+        save()
+        onHotKeysChange?()
+    }
+
+    func resetHotKeys() {
+        showClipboardHotKey = .defaultShowClipboard
+        toggleOverlayHotKey = .defaultToggleOverlay
+    }
+
     // MARK: - Persistence
 
     private func load() {
@@ -99,6 +117,14 @@ final class SettingsModel: ObservableObject {
         if d.object(forKey: Key.padding) != nil { padding = d.double(forKey: Key.padding) }
         if d.object(forKey: Key.overlayWidth) != nil { overlayWidth = d.double(forKey: Key.overlayWidth) }
         if d.object(forKey: Key.overlayHeight) != nil { overlayHeight = d.double(forKey: Key.overlayHeight) }
+        if d.object(forKey: Key.showHotKeyCode) != nil {
+            showClipboardHotKey = HotKeyCombo(keyCode: UInt32(d.integer(forKey: Key.showHotKeyCode)),
+                                              modifiers: UInt32(d.integer(forKey: Key.showHotKeyModifiers)))
+        }
+        if d.object(forKey: Key.toggleHotKeyCode) != nil {
+            toggleOverlayHotKey = HotKeyCombo(keyCode: UInt32(d.integer(forKey: Key.toggleHotKeyCode)),
+                                              modifiers: UInt32(d.integer(forKey: Key.toggleHotKeyModifiers)))
+        }
     }
 
     private func save() {
@@ -113,6 +139,10 @@ final class SettingsModel: ObservableObject {
         d.set(padding, forKey: Key.padding)
         d.set(overlayWidth, forKey: Key.overlayWidth)
         d.set(overlayHeight, forKey: Key.overlayHeight)
+        d.set(Int(showClipboardHotKey.keyCode), forKey: Key.showHotKeyCode)
+        d.set(Int(showClipboardHotKey.modifiers), forKey: Key.showHotKeyModifiers)
+        d.set(Int(toggleOverlayHotKey.keyCode), forKey: Key.toggleHotKeyCode)
+        d.set(Int(toggleOverlayHotKey.modifiers), forKey: Key.toggleHotKeyModifiers)
     }
 
     // MARK: - Panel position

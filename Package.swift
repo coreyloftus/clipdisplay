@@ -9,8 +9,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "ClipDisplay",
-            path: "Sources/ClipDisplay"
+            path: "Sources/ClipDisplay",
+            swiftSettings: [
+                .swiftLanguageMode(.v5)
+            ]
         )
-    ],
-    swiftLanguageVersions: [.v5]
+    ]
 )
