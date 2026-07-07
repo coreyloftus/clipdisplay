@@ -63,7 +63,11 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Layout") {
+            Section {
+                Toggle("Auto-size overlay to content", isOn: $settings.autoSizeOverlay)
+                Toggle("Shrink text to fit", isOn: $settings.shrinkTextToFit)
+                Toggle("Scroll overflowing content", isOn: $settings.scrollOverflow)
+
                 LabeledContent("Padding") {
                     HStack {
                         Slider(value: $settings.padding, in: 0...120)
@@ -73,7 +77,7 @@ struct SettingsView: View {
                     }
                 }
 
-                LabeledContent("Overlay width") {
+                LabeledContent(settings.autoSizeOverlay ? "Max width" : "Overlay width") {
                     HStack {
                         TextField("Width", value: $settings.overlayWidth, format: .number.precision(.fractionLength(0)))
                             .labelsHidden()
@@ -83,7 +87,7 @@ struct SettingsView: View {
                     }
                 }
 
-                LabeledContent("Overlay height") {
+                LabeledContent(settings.autoSizeOverlay ? "Max height" : "Overlay height") {
                     HStack {
                         TextField("Height", value: $settings.overlayHeight, format: .number.precision(.fractionLength(0)))
                             .labelsHidden()
@@ -96,6 +100,10 @@ struct SettingsView: View {
                 Button("Reset Position") {
                     settings.resetPosition()
                 }
+            } header: {
+                Text("Layout")
+            } footer: {
+                Text("Auto-size hugs the content and treats width/height as maximums. When content overflows, text shrinks to 10 pt before scrolling kicks in.")
             }
 
             Section {

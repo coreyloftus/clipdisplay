@@ -20,6 +20,8 @@ Both are rebindable in Settings: click the shortcut, then press any combination 
 
 Open **Settings…** from the menu-bar icon. All changes apply to the overlay live: font family, size, bold, text color, background color + opacity, alignment, padding, overlay width/height, hotkey bindings, and a reset-position button.
 
+Sizing adapts to the clipboard (each behavior is a toggle): the overlay hugs small content and grows up to the configured max width/height; content that overflows at the chosen font size shrinks down to 10 pt to fit; anything still overflowing (a big JSON blob, say) scrolls with an auto-hiding scrollbar.
+
 ## Build & run
 
 Requires macOS 14+ (Apple Silicon) and the Xcode Command Line Tools — full Xcode is not needed.

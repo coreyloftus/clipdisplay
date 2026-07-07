@@ -42,6 +42,9 @@ final class SettingsModel: ObservableObject {
     @Published var padding: Double = Defaults.padding { didSet { changed() } }
     @Published var overlayWidth: Double = Defaults.overlayWidth { didSet { changed() } }
     @Published var overlayHeight: Double = Defaults.overlayHeight { didSet { changed() } }
+    @Published var autoSizeOverlay: Bool = Defaults.autoSizeOverlay { didSet { changed() } }
+    @Published var shrinkTextToFit: Bool = Defaults.shrinkTextToFit { didSet { changed() } }
+    @Published var scrollOverflow: Bool = Defaults.scrollOverflow { didSet { changed() } }
     @Published var showClipboardHotKey: HotKeyCombo = .defaultShowClipboard { didSet { hotKeysChanged() } }
     @Published var toggleOverlayHotKey: HotKeyCombo = .defaultToggleOverlay { didSet { hotKeysChanged() } }
 
@@ -56,6 +59,9 @@ final class SettingsModel: ObservableObject {
         static let padding: Double = 24
         static let overlayWidth: Double = 800
         static let overlayHeight: Double = 300
+        static let autoSizeOverlay = true
+        static let shrinkTextToFit = true
+        static let scrollOverflow = true
     }
 
     private enum Key {
@@ -69,6 +75,9 @@ final class SettingsModel: ObservableObject {
         static let padding = "padding"
         static let overlayWidth = "overlayWidth"
         static let overlayHeight = "overlayHeight"
+        static let autoSizeOverlay = "autoSizeOverlay"
+        static let shrinkTextToFit = "shrinkTextToFit"
+        static let scrollOverflow = "scrollOverflow"
         static let hasOrigin = "panelHasOrigin"
         static let originX = "panelOriginX"
         static let originY = "panelOriginY"
@@ -117,6 +126,9 @@ final class SettingsModel: ObservableObject {
         if d.object(forKey: Key.padding) != nil { padding = d.double(forKey: Key.padding) }
         if d.object(forKey: Key.overlayWidth) != nil { overlayWidth = d.double(forKey: Key.overlayWidth) }
         if d.object(forKey: Key.overlayHeight) != nil { overlayHeight = d.double(forKey: Key.overlayHeight) }
+        if d.object(forKey: Key.autoSizeOverlay) != nil { autoSizeOverlay = d.bool(forKey: Key.autoSizeOverlay) }
+        if d.object(forKey: Key.shrinkTextToFit) != nil { shrinkTextToFit = d.bool(forKey: Key.shrinkTextToFit) }
+        if d.object(forKey: Key.scrollOverflow) != nil { scrollOverflow = d.bool(forKey: Key.scrollOverflow) }
         if d.object(forKey: Key.showHotKeyCode) != nil {
             showClipboardHotKey = HotKeyCombo(keyCode: UInt32(d.integer(forKey: Key.showHotKeyCode)),
                                               modifiers: UInt32(d.integer(forKey: Key.showHotKeyModifiers)))
@@ -139,6 +151,9 @@ final class SettingsModel: ObservableObject {
         d.set(padding, forKey: Key.padding)
         d.set(overlayWidth, forKey: Key.overlayWidth)
         d.set(overlayHeight, forKey: Key.overlayHeight)
+        d.set(autoSizeOverlay, forKey: Key.autoSizeOverlay)
+        d.set(shrinkTextToFit, forKey: Key.shrinkTextToFit)
+        d.set(scrollOverflow, forKey: Key.scrollOverflow)
         d.set(Int(showClipboardHotKey.keyCode), forKey: Key.showHotKeyCode)
         d.set(Int(showClipboardHotKey.modifiers), forKey: Key.showHotKeyModifiers)
         d.set(Int(toggleOverlayHotKey.keyCode), forKey: Key.toggleHotKeyCode)
