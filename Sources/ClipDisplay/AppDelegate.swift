@@ -97,9 +97,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerHotKeys() {
         hotKeys.unregisterAll()
-        // Default ⌥⇧Space — read clipboard, update overlay, show it
+        // Default ⌥⇧Space — show the clipboard, or dismiss if already visible
         hotKeys.register(settings.showClipboardHotKey) { [weak self] in
-            self?.showClipboard()
+            guard let self else { return }
+            if self.overlay.isVisible {
+                self.overlay.orderOut(nil)
+            } else {
+                self.showClipboard()
+            }
         }
         // Default ⌘⇧H — toggle overlay visibility
         hotKeys.register(settings.toggleOverlayHotKey) { [weak self] in

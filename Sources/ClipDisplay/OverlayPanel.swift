@@ -48,6 +48,12 @@ final class OverlayPanel: NSPanel {
         label.maximumNumberOfLines = 0
         label.lineBreakMode = .byWordWrapping
         label.cell?.truncatesLastVisibleLine = true
+        // The panel's size comes from Settings alone — long clipboard text must
+        // wrap and clip inside it, never force the window to grow via Auto Layout.
+        label.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(1), for: .horizontal)
+        label.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(1), for: .vertical)
+        label.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal)
+        label.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .vertical)
         content.addSubview(label)
 
         leadingConstraint = label.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: settings.padding)
@@ -75,6 +81,7 @@ final class OverlayPanel: NSPanel {
     func update(text: String?, placeholder: String = "— no text on clipboard —") {
         currentText = text
         placeholderMessage = placeholder
+        applySize()
         refreshText()
     }
 
@@ -90,8 +97,11 @@ final class OverlayPanel: NSPanel {
         topConstraint.constant = settings.padding
         bottomConstraint.constant = -settings.padding
 
+        applySize()
         refreshText()
+    }
 
+    private func applySize() {
         let size = NSSize(width: max(settings.overlayWidth, 100),
                           height: max(settings.overlayHeight, 60))
         if frame.size != size {
@@ -100,6 +110,7 @@ final class OverlayPanel: NSPanel {
     }
 
     private func refreshText() {
+        label.preferredMaxLayoutWidth = max(50, frame.width - 2 * settings.padding)
         label.stringValue = isShowingPlaceholder ? placeholderMessage : currentText!
         label.font = resolvedFont()
         label.alignment = settings.alignment.nsAlignment

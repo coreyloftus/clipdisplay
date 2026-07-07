@@ -11,8 +11,8 @@ A lightweight native macOS menu-bar app that displays your clipboard text in a f
 
 | Default | Action |
 |---|---|
-| `⌥⇧Space` | Read clipboard → show styled overlay |
-| `⌘⇧H` | Toggle overlay visibility |
+| `⌥⇧Space` | Read clipboard → show styled overlay; press again to dismiss |
+| `⌘⇧H` | Toggle overlay visibility (without re-reading the clipboard) |
 
 Both are rebindable in Settings: click the shortcut, then press any combination that includes `⌘`, `⌥`, or `⌃` (press `⎋` to cancel).
 
