@@ -118,7 +118,7 @@ final class OverlayPanel: NSPanel {
         let content = contentView!
 
         let opacity = min(max(settings.backgroundOpacity, 0), 1)
-        content.layer?.backgroundColor = settings.backgroundColor.withAlphaComponent(opacity).cgColor
+        content.layer?.backgroundColor = settings.effectiveBackgroundColor.withAlphaComponent(opacity).cgColor
 
         leadingConstraint.constant = settings.padding
         trailingConstraint.constant = -settings.padding
@@ -187,8 +187,8 @@ final class OverlayPanel: NSPanel {
         paragraph.alignment = settings.alignment.nsAlignment
         paragraph.lineBreakMode = .byWordWrapping
         let color = isShowingPlaceholder
-            ? settings.textColor.withAlphaComponent(0.5)
-            : settings.textColor
+            ? settings.effectiveTextColor.withAlphaComponent(0.5)
+            : settings.effectiveTextColor
         return NSAttributedString(string: isShowingPlaceholder ? placeholderMessage : currentText!,
                                   attributes: [
                                       .font: resolvedFont(size: fontSize),

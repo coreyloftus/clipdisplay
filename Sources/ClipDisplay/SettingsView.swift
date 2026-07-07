@@ -10,14 +10,9 @@ struct SettingsView: View {
     private var maxWidth: Double { Double(NSScreen.main?.frame.width ?? 3840) }
     private var maxHeight: Double { Double(NSScreen.main?.frame.height ?? 2160) }
 
-    private var textColor: Binding<Color> {
-        Binding(get: { Color(nsColor: settings.textColor) },
-                set: { settings.textColor = NSColor($0) })
-    }
-
-    private var backgroundColor: Binding<Color> {
-        Binding(get: { Color(nsColor: settings.backgroundColor) },
-                set: { settings.backgroundColor = NSColor($0) })
+    private func colorBinding(_ keyPath: ReferenceWritableKeyPath<SettingsModel, NSColor>) -> Binding<Color> {
+        Binding(get: { Color(nsColor: settings[keyPath: keyPath]) },
+                set: { settings[keyPath: keyPath] = NSColor($0) })
     }
 
     var body: some View {
@@ -40,8 +35,6 @@ struct SettingsView: View {
 
                 Toggle("Bold", isOn: $settings.bold)
 
-                ColorPicker("Text color", selection: textColor)
-
                 Picker("Alignment", selection: $settings.alignment) {
                     ForEach(TextAlignmentSetting.allCases) { alignment in
                         Text(alignment.label).tag(alignment)
@@ -50,10 +43,20 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
             }
 
-            Section("Background") {
-                ColorPicker("Background color", selection: backgroundColor)
+            Section {
+                Toggle("Follow system light/dark mode", isOn: $settings.followSystemAppearance)
 
-                LabeledContent("Opacity") {
+                if settings.followSystemAppearance {
+                    ColorPicker("Light mode — text", selection: colorBinding(\.lightTextColor))
+                    ColorPicker("Light mode — background", selection: colorBinding(\.lightBackgroundColor))
+                    ColorPicker("Dark mode — text", selection: colorBinding(\.darkTextColor))
+                    ColorPicker("Dark mode — background", selection: colorBinding(\.darkBackgroundColor))
+                } else {
+                    ColorPicker("Text color", selection: colorBinding(\.textColor))
+                    ColorPicker("Background color", selection: colorBinding(\.backgroundColor))
+                }
+
+                LabeledContent("Background opacity") {
                     HStack {
                         Slider(value: $settings.backgroundOpacity, in: 0...1)
                         Text("\(Int(settings.backgroundOpacity * 100))%")
@@ -61,6 +64,12 @@ struct SettingsView: View {
                             .frame(width: 52, alignment: .trailing)
                     }
                 }
+            } header: {
+                Text("Colors")
+            } footer: {
+                Text(settings.followSystemAppearance
+                     ? "The overlay switches color sets automatically when macOS changes appearance."
+                     : "One fixed color set is used regardless of the system appearance.")
             }
 
             Section {

@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var showClipboardItem: NSMenuItem?
     private var showHideItem: NSMenuItem?
+    private var appearanceObservation: NSKeyValueObservation?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         overlay = OverlayPanel(settings: settings)
@@ -44,6 +45,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                queue: .main) { [weak self] _ in
             guard let self else { return }
             self.settings.saveOrigin(self.overlay.frame.origin)
+        }
+
+        // Restyle when macOS switches between light and dark mode.
+        appearanceObservation = NSApp.observe(\.effectiveAppearance) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.overlay.apply() }
         }
 
         setUpStatusItem()

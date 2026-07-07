@@ -37,6 +37,11 @@ final class SettingsModel: ObservableObject {
     @Published var bold: Bool = Defaults.bold { didSet { changed() } }
     @Published var textColor: NSColor = Defaults.textColor { didSet { changed() } }
     @Published var backgroundColor: NSColor = Defaults.backgroundColor { didSet { changed() } }
+    @Published var followSystemAppearance: Bool = Defaults.followSystemAppearance { didSet { changed() } }
+    @Published var lightTextColor: NSColor = Defaults.lightTextColor { didSet { changed() } }
+    @Published var lightBackgroundColor: NSColor = Defaults.lightBackgroundColor { didSet { changed() } }
+    @Published var darkTextColor: NSColor = Defaults.darkTextColor { didSet { changed() } }
+    @Published var darkBackgroundColor: NSColor = Defaults.darkBackgroundColor { didSet { changed() } }
     @Published var backgroundOpacity: Double = Defaults.backgroundOpacity { didSet { changed() } }
     @Published var alignment: TextAlignmentSetting = Defaults.alignment { didSet { changed() } }
     @Published var padding: Double = Defaults.padding { didSet { changed() } }
@@ -54,6 +59,11 @@ final class SettingsModel: ObservableObject {
         static let bold = false
         static let textColor: NSColor = .white
         static let backgroundColor: NSColor = .black
+        static let followSystemAppearance = false
+        static let lightTextColor: NSColor = .black
+        static let lightBackgroundColor: NSColor = .white
+        static let darkTextColor: NSColor = .white
+        static let darkBackgroundColor: NSColor = .black
         static let backgroundOpacity: Double = 0.85
         static let alignment: TextAlignmentSetting = .center
         static let padding: Double = 24
@@ -70,6 +80,11 @@ final class SettingsModel: ObservableObject {
         static let bold = "bold"
         static let textColor = "textColor"
         static let backgroundColor = "backgroundColor"
+        static let followSystemAppearance = "followSystemAppearance"
+        static let lightTextColor = "lightTextColor"
+        static let lightBackgroundColor = "lightBackgroundColor"
+        static let darkTextColor = "darkTextColor"
+        static let darkBackgroundColor = "darkBackgroundColor"
         static let backgroundOpacity = "backgroundOpacity"
         static let alignment = "alignment"
         static let padding = "padding"
@@ -112,6 +127,22 @@ final class SettingsModel: ObservableObject {
         toggleOverlayHotKey = .defaultToggleOverlay
     }
 
+    // MARK: - Appearance-resolved colors
+
+    static var systemIsDark: Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+    }
+
+    var effectiveTextColor: NSColor {
+        guard followSystemAppearance else { return textColor }
+        return Self.systemIsDark ? darkTextColor : lightTextColor
+    }
+
+    var effectiveBackgroundColor: NSColor {
+        guard followSystemAppearance else { return backgroundColor }
+        return Self.systemIsDark ? darkBackgroundColor : lightBackgroundColor
+    }
+
     // MARK: - Persistence
 
     private func load() {
@@ -121,6 +152,11 @@ final class SettingsModel: ObservableObject {
         if d.object(forKey: Key.bold) != nil { bold = d.bool(forKey: Key.bold) }
         if let color = Self.color(from: d.data(forKey: Key.textColor)) { textColor = color }
         if let color = Self.color(from: d.data(forKey: Key.backgroundColor)) { backgroundColor = color }
+        if d.object(forKey: Key.followSystemAppearance) != nil { followSystemAppearance = d.bool(forKey: Key.followSystemAppearance) }
+        if let color = Self.color(from: d.data(forKey: Key.lightTextColor)) { lightTextColor = color }
+        if let color = Self.color(from: d.data(forKey: Key.lightBackgroundColor)) { lightBackgroundColor = color }
+        if let color = Self.color(from: d.data(forKey: Key.darkTextColor)) { darkTextColor = color }
+        if let color = Self.color(from: d.data(forKey: Key.darkBackgroundColor)) { darkBackgroundColor = color }
         if d.object(forKey: Key.backgroundOpacity) != nil { backgroundOpacity = d.double(forKey: Key.backgroundOpacity) }
         if let raw = d.object(forKey: Key.alignment) as? Int, let a = TextAlignmentSetting(rawValue: raw) { alignment = a }
         if d.object(forKey: Key.padding) != nil { padding = d.double(forKey: Key.padding) }
@@ -146,6 +182,11 @@ final class SettingsModel: ObservableObject {
         d.set(bold, forKey: Key.bold)
         d.set(Self.data(from: textColor), forKey: Key.textColor)
         d.set(Self.data(from: backgroundColor), forKey: Key.backgroundColor)
+        d.set(followSystemAppearance, forKey: Key.followSystemAppearance)
+        d.set(Self.data(from: lightTextColor), forKey: Key.lightTextColor)
+        d.set(Self.data(from: lightBackgroundColor), forKey: Key.lightBackgroundColor)
+        d.set(Self.data(from: darkTextColor), forKey: Key.darkTextColor)
+        d.set(Self.data(from: darkBackgroundColor), forKey: Key.darkBackgroundColor)
         d.set(backgroundOpacity, forKey: Key.backgroundOpacity)
         d.set(alignment.rawValue, forKey: Key.alignment)
         d.set(padding, forKey: Key.padding)
