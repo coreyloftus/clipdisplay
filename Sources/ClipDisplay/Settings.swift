@@ -34,6 +34,8 @@ final class SettingsModel: ObservableObject {
 
     @Published var fontFamily: String = Defaults.fontFamily { didSet { changed() } }
     @Published var fontSize: Double = Defaults.fontSize { didSet { changed() } }
+    @Published var minFontSize: Double = Defaults.minFontSize { didSet { changed() } }
+    @Published var maxFontSize: Double = Defaults.maxFontSize { didSet { changed() } }
     @Published var bold: Bool = Defaults.bold { didSet { changed() } }
     @Published var textColor: NSColor = Defaults.textColor { didSet { changed() } }
     @Published var backgroundColor: NSColor = Defaults.backgroundColor { didSet { changed() } }
@@ -47,6 +49,8 @@ final class SettingsModel: ObservableObject {
     @Published var padding: Double = Defaults.padding { didSet { changed() } }
     @Published var overlayWidth: Double = Defaults.overlayWidth { didSet { changed() } }
     @Published var overlayHeight: Double = Defaults.overlayHeight { didSet { changed() } }
+    @Published var minOverlayWidth: Double = Defaults.minOverlayWidth { didSet { changed() } }
+    @Published var minOverlayHeight: Double = Defaults.minOverlayHeight { didSet { changed() } }
     @Published var autoSizeOverlay: Bool = Defaults.autoSizeOverlay { didSet { changed() } }
     @Published var shrinkTextToFit: Bool = Defaults.shrinkTextToFit { didSet { changed() } }
     @Published var scrollOverflow: Bool = Defaults.scrollOverflow { didSet { changed() } }
@@ -56,6 +60,8 @@ final class SettingsModel: ObservableObject {
     enum Defaults {
         static let fontFamily = "Helvetica Neue"
         static let fontSize: Double = 48
+        static let minFontSize: Double = 10
+        static let maxFontSize: Double = 200
         static let bold = false
         static let textColor: NSColor = .white
         static let backgroundColor: NSColor = .black
@@ -69,6 +75,8 @@ final class SettingsModel: ObservableObject {
         static let padding: Double = 24
         static let overlayWidth: Double = 800
         static let overlayHeight: Double = 300
+        static let minOverlayWidth: Double = 200
+        static let minOverlayHeight: Double = 120
         static let autoSizeOverlay = true
         static let shrinkTextToFit = true
         static let scrollOverflow = true
@@ -77,6 +85,8 @@ final class SettingsModel: ObservableObject {
     private enum Key {
         static let fontFamily = "fontFamily"
         static let fontSize = "fontSize"
+        static let minFontSize = "minFontSize"
+        static let maxFontSize = "maxFontSize"
         static let bold = "bold"
         static let textColor = "textColor"
         static let backgroundColor = "backgroundColor"
@@ -90,6 +100,8 @@ final class SettingsModel: ObservableObject {
         static let padding = "padding"
         static let overlayWidth = "overlayWidth"
         static let overlayHeight = "overlayHeight"
+        static let minOverlayWidth = "minOverlayWidth"
+        static let minOverlayHeight = "minOverlayHeight"
         static let autoSizeOverlay = "autoSizeOverlay"
         static let shrinkTextToFit = "shrinkTextToFit"
         static let scrollOverflow = "scrollOverflow"
@@ -149,6 +161,8 @@ final class SettingsModel: ObservableObject {
         let d = defaults
         if let family = d.string(forKey: Key.fontFamily) { fontFamily = family }
         if d.object(forKey: Key.fontSize) != nil { fontSize = d.double(forKey: Key.fontSize) }
+        if d.object(forKey: Key.minFontSize) != nil { minFontSize = d.double(forKey: Key.minFontSize) }
+        if d.object(forKey: Key.maxFontSize) != nil { maxFontSize = d.double(forKey: Key.maxFontSize) }
         if d.object(forKey: Key.bold) != nil { bold = d.bool(forKey: Key.bold) }
         if let color = Self.color(from: d.data(forKey: Key.textColor)) { textColor = color }
         if let color = Self.color(from: d.data(forKey: Key.backgroundColor)) { backgroundColor = color }
@@ -162,6 +176,8 @@ final class SettingsModel: ObservableObject {
         if d.object(forKey: Key.padding) != nil { padding = d.double(forKey: Key.padding) }
         if d.object(forKey: Key.overlayWidth) != nil { overlayWidth = d.double(forKey: Key.overlayWidth) }
         if d.object(forKey: Key.overlayHeight) != nil { overlayHeight = d.double(forKey: Key.overlayHeight) }
+        if d.object(forKey: Key.minOverlayWidth) != nil { minOverlayWidth = d.double(forKey: Key.minOverlayWidth) }
+        if d.object(forKey: Key.minOverlayHeight) != nil { minOverlayHeight = d.double(forKey: Key.minOverlayHeight) }
         if d.object(forKey: Key.autoSizeOverlay) != nil { autoSizeOverlay = d.bool(forKey: Key.autoSizeOverlay) }
         if d.object(forKey: Key.shrinkTextToFit) != nil { shrinkTextToFit = d.bool(forKey: Key.shrinkTextToFit) }
         if d.object(forKey: Key.scrollOverflow) != nil { scrollOverflow = d.bool(forKey: Key.scrollOverflow) }
@@ -179,6 +195,8 @@ final class SettingsModel: ObservableObject {
         let d = defaults
         d.set(fontFamily, forKey: Key.fontFamily)
         d.set(fontSize, forKey: Key.fontSize)
+        d.set(minFontSize, forKey: Key.minFontSize)
+        d.set(maxFontSize, forKey: Key.maxFontSize)
         d.set(bold, forKey: Key.bold)
         d.set(Self.data(from: textColor), forKey: Key.textColor)
         d.set(Self.data(from: backgroundColor), forKey: Key.backgroundColor)
@@ -192,6 +210,8 @@ final class SettingsModel: ObservableObject {
         d.set(padding, forKey: Key.padding)
         d.set(overlayWidth, forKey: Key.overlayWidth)
         d.set(overlayHeight, forKey: Key.overlayHeight)
+        d.set(minOverlayWidth, forKey: Key.minOverlayWidth)
+        d.set(minOverlayHeight, forKey: Key.minOverlayHeight)
         d.set(autoSizeOverlay, forKey: Key.autoSizeOverlay)
         d.set(shrinkTextToFit, forKey: Key.shrinkTextToFit)
         d.set(scrollOverflow, forKey: Key.scrollOverflow)
