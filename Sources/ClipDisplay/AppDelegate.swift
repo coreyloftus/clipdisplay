@@ -91,6 +91,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
+        let checkForUpdate = NSMenuItem(title: "Check for Update…",
+                                        action: #selector(checkForUpdate),
+                                        keyEquivalent: "")
+        checkForUpdate.target = self
+        menu.addItem(checkForUpdate)
+
+        menu.addItem(.separator())
+
         let quit = NSMenuItem(title: "Quit ClipDisplay",
                               action: #selector(NSApplication.terminate(_:)),
                               keyEquivalent: "q")
@@ -150,6 +158,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             overlay.orderFrontRegardless()
         }
+    }
+
+    @objc private func checkForUpdate() {
+        Updater.checkForUpdates()
     }
 
     @objc private func showSettings() {
