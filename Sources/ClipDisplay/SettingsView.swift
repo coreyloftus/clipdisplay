@@ -74,7 +74,28 @@ struct SettingsView: View {
 
             Section {
                 Toggle("Auto-size overlay to content", isOn: $settings.autoSizeOverlay)
-                Toggle("Shrink text to fit", isOn: $settings.shrinkTextToFit)
+                Toggle("Intelligently resize font to fit", isOn: $settings.shrinkTextToFit)
+
+                if settings.shrinkTextToFit {
+                    LabeledContent("Min font size") {
+                        HStack {
+                            Slider(value: $settings.minFontSize, in: 6...max(6, settings.maxFontSize))
+                            Text("\(Int(settings.minFontSize)) pt")
+                                .monospacedDigit()
+                                .frame(width: 52, alignment: .trailing)
+                        }
+                    }
+
+                    LabeledContent("Max font size") {
+                        HStack {
+                            Slider(value: $settings.maxFontSize, in: min(settings.minFontSize, 400)...400)
+                            Text("\(Int(settings.maxFontSize)) pt")
+                                .monospacedDigit()
+                                .frame(width: 52, alignment: .trailing)
+                        }
+                    }
+                }
+
                 Toggle("Scroll overflowing content", isOn: $settings.scrollOverflow)
 
                 LabeledContent("Padding") {
@@ -83,6 +104,28 @@ struct SettingsView: View {
                         Text("\(Int(settings.padding)) pt")
                             .monospacedDigit()
                             .frame(width: 52, alignment: .trailing)
+                    }
+                }
+
+                if settings.autoSizeOverlay {
+                    LabeledContent("Min width") {
+                        HStack {
+                            TextField("Min width", value: $settings.minOverlayWidth, format: .number.precision(.fractionLength(0)))
+                                .labelsHidden()
+                                .frame(width: 64)
+                            Stepper("Min width", value: $settings.minOverlayWidth, in: 80...max(80, settings.overlayWidth), step: 10)
+                                .labelsHidden()
+                        }
+                    }
+
+                    LabeledContent("Min height") {
+                        HStack {
+                            TextField("Min height", value: $settings.minOverlayHeight, format: .number.precision(.fractionLength(0)))
+                                .labelsHidden()
+                                .frame(width: 64)
+                            Stepper("Min height", value: $settings.minOverlayHeight, in: 40...max(40, settings.overlayHeight), step: 10)
+                                .labelsHidden()
+                        }
                     }
                 }
 
@@ -112,7 +155,7 @@ struct SettingsView: View {
             } header: {
                 Text("Layout")
             } footer: {
-                Text("Auto-size hugs the content and treats width/height as maximums. When content overflows, text shrinks to 10 pt before scrolling kicks in.")
+                Text("Auto-size hugs the content between the min and max width/height. Intelligent resize fits the font to the text length — shrinking long text and (for a fixed-size overlay) growing short text — within the min/max font sizes. Anything still too large scrolls.")
             }
 
             Section {

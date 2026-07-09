@@ -22,14 +22,13 @@ private final class OverlayScrollView: NSScrollView {
 /// Borderless, non-activating floating panel that renders the clipboard text
 /// with the user's styling. Visible on all Spaces and over full-screen apps.
 ///
-/// Sizing: the Settings width/height are treated as a maximum footprint. With
-/// auto-size on, the panel hugs small content; larger content grows the panel
-/// to the max, then the font shrinks (down to `minimumFontSize`), and anything
-/// still overflowing scrolls.
+/// Sizing: the Settings width/height are treated as a maximum footprint and the
+/// min width/height as a floor. With auto-size on, the panel hugs small content
+/// (down to the min size); larger content grows the panel to the max, then the
+/// font shrinks (down to the settings' min font size), and anything still
+/// overflowing scrolls. When "intelligently resize font" is on, the font is
+/// fit dynamically to the content length, bounded by the min/max font settings.
 final class OverlayPanel: NSPanel {
-    static let minimumFontSize: CGFloat = 10
-    static let minimumPanelSize = NSSize(width: 100, height: 60)
-
     private let settings: SettingsModel
     private let scrollView = OverlayScrollView()
     private let textView = OverlayTextView(frame: .zero)
@@ -135,21 +134,34 @@ final class OverlayPanel: NSPanel {
 
     private func layoutContent() {
         let pad = max(0, settings.padding)
-        let maxW = max(settings.overlayWidth, Self.minimumPanelSize.width)
-        let maxH = max(settings.overlayHeight, Self.minimumPanelSize.height)
+        // Min width/height are a floor; the settings width/height are the max
+        // footprint. Clamp the floor so it can never exceed the max.
+        let minW = min(settings.minOverlayWidth, settings.overlayWidth)
+        let minH = min(settings.minOverlayHeight, settings.overlayHeight)
+        let maxW = max(settings.overlayWidth, minW)
+        let maxH = max(settings.overlayHeight, minH)
         let availableWidth = max(50, maxW - 2 * pad)
         let availableHeight = max(30, maxH - 2 * pad)
 
+        let minFont = max(1, min(settings.minFontSize, settings.maxFontSize))
+        // Auto-size treats the chosen font size as the natural target and only
+        // shrinks it to fit; a fixed-size overlay also grows the text (up to the
+        // max font size) to fill the window — so the size tracks text length.
+        let maxFont = settings.autoSizeOverlay
+            ? max(minFont, settings.fontSize)
+            : max(minFont, settings.maxFontSize)
+
         var fontSize = settings.fontSize
-        if settings.shrinkTextToFit,
-           measuredHeight(fontSize: fontSize, width: availableWidth) > availableHeight {
-            if measuredHeight(fontSize: Self.minimumFontSize, width: availableWidth) > availableHeight {
-                fontSize = Self.minimumFontSize // still overflows; scrolling/clipping takes over
+        if settings.shrinkTextToFit {
+            if measuredHeight(fontSize: minFont, width: availableWidth) > availableHeight {
+                fontSize = minFont // even the smallest size overflows; scrolling/clipping takes over
+            } else if measuredHeight(fontSize: maxFont, width: availableWidth) <= availableHeight {
+                fontSize = maxFont // even the largest allowed size fits
             } else {
-                // binary-search the largest size that fits the max content area
-                var lo = Self.minimumFontSize
-                var hi = settings.fontSize
-                for _ in 0..<14 {
+                // binary-search the largest size in [minFont, maxFont] that fits the max content area
+                var lo = minFont
+                var hi = maxFont
+                for _ in 0..<18 {
                     let mid = (lo + hi) / 2
                     if measuredHeight(fontSize: mid, width: availableWidth) <= availableHeight {
                         lo = mid
@@ -167,9 +179,9 @@ final class OverlayPanel: NSPanel {
         var panelWidth = maxW
         var panelHeight = maxH
         if settings.autoSizeOverlay {
-            panelWidth = min(maxW, max(Self.minimumPanelSize.width, textSize.width + 2 * pad))
+            panelWidth = min(maxW, max(minW, textSize.width + 2 * pad))
             textSize = Self.measure(attributed, width: max(50, panelWidth - 2 * pad))
-            panelHeight = min(maxH, max(Self.minimumPanelSize.height, textSize.height + 2 * pad))
+            panelHeight = min(maxH, max(minH, textSize.height + 2 * pad))
         }
 
         // center short content vertically in the visible area

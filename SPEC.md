@@ -77,6 +77,8 @@ A SwiftUI form presented in a normal titled `NSWindow` (opened from the menu bar
 |---|---|---|---|
 | Font family | picker of available system font family names | `NSFontManager.shared.availableFontFamilies` | `Helvetica Neue` |
 | Font size | slider | 12 – 300 pt | 48 |
+| Min font size | slider | 6 – max font size | 10 |
+| Max font size | slider | min font size – 400 pt | 200 |
 | Bold | toggle | — | off |
 | Text color | color picker | any | white (`#FFFFFF`) |
 | Background color | color picker | any | black (`#000000`) |
@@ -85,6 +87,9 @@ A SwiftUI form presented in a normal titled `NSWindow` (opened from the menu bar
 | Padding | slider | 0 – 120 pt | 24 |
 | Overlay width | stepper / field | 100 – screen width | 800 |
 | Overlay height | stepper / field | 60 – screen height | 300 |
+| Min overlay width | stepper / field | 80 – overlay width | 200 |
+| Min overlay height | stepper / field | 40 – overlay height | 120 |
+| Intelligently resize font | toggle | fit font to text length within min/max font | on |
 | Reset position | button | recenters panel on main screen | — |
 
 Use SwiftUI `ColorPicker`, `Slider`, `Picker`, `Stepper`, `Toggle`.
