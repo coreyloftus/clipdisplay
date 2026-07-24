@@ -1,4 +1,5 @@
 .build/
 .swiftpm/
 ClipDisplay.app/
+ClipDisplay.iconset/
 .DS_Store
