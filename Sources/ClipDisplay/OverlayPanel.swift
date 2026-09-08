@@ -151,11 +151,20 @@ final class OverlayPanel: NSPanel {
             ? max(minFont, settings.fontSize)
             : max(minFont, settings.maxFontSize)
 
+        // A size only fits if the text wraps within the height *and* its widest
+        // unbreakable run fits the width — otherwise word wrapping degrades into
+        // a mid-word character wrap (see longestUnbreakableRun).
+        let unbreakable = Self.longestUnbreakableRun(in: displayString)
+        func fits(_ size: CGFloat) -> Bool {
+            unbreakableWidth(unbreakable, fontSize: size) <= availableWidth
+                && measuredHeight(fontSize: size, width: availableWidth) <= availableHeight
+        }
+
         var fontSize = settings.fontSize
         if settings.shrinkTextToFit {
-            if measuredHeight(fontSize: minFont, width: availableWidth) > availableHeight {
+            if !fits(minFont) {
                 fontSize = minFont // even the smallest size overflows; scrolling/clipping takes over
-            } else if measuredHeight(fontSize: maxFont, width: availableWidth) <= availableHeight {
+            } else if fits(maxFont) {
                 fontSize = maxFont // even the largest allowed size fits
             } else {
                 // binary-search the largest size in [minFont, maxFont] that fits the max content area
@@ -163,7 +172,7 @@ final class OverlayPanel: NSPanel {
                 var hi = maxFont
                 for _ in 0..<18 {
                     let mid = (lo + hi) / 2
-                    if measuredHeight(fontSize: mid, width: availableWidth) <= availableHeight {
+                    if fits(mid) {
                         lo = mid
                     } else {
                         hi = mid
@@ -194,6 +203,10 @@ final class OverlayPanel: NSPanel {
         textView.scroll(.zero)
     }
 
+    private var displayString: String {
+        isShowingPlaceholder ? placeholderMessage : currentText!
+    }
+
     private func attributedText(fontSize: CGFloat) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = settings.alignment.nsAlignment
@@ -201,7 +214,7 @@ final class OverlayPanel: NSPanel {
         let color = isShowingPlaceholder
             ? settings.effectiveTextColor.withAlphaComponent(0.5)
             : settings.effectiveTextColor
-        return NSAttributedString(string: isShowingPlaceholder ? placeholderMessage : currentText!,
+        return NSAttributedString(string: displayString,
                                   attributes: [
                                       .font: resolvedFont(size: fontSize),
                                       .foregroundColor: color,
@@ -211,6 +224,23 @@ final class OverlayPanel: NSPanel {
 
     private func measuredHeight(fontSize: CGFloat, width: CGFloat) -> CGFloat {
         Self.measure(attributedText(fontSize: fontSize), width: width).height
+    }
+
+    /// Longest whitespace-free run in the text — the widest chunk word wrapping
+    /// cannot break. When it is wider than the container AppKit silently falls
+    /// back to breaking mid-word, so it has to fit for a size to be usable.
+    private static func longestUnbreakableRun(in text: String) -> String {
+        let runs: [Substring] = text.split(whereSeparator: { $0.isWhitespace })
+        guard let longest = runs.max(by: { $0.count < $1.count }) else { return "" }
+        return String(longest)
+    }
+
+    /// Width of an unbreakable run laid out on one unbounded line.
+    private func unbreakableWidth(_ run: String, fontSize: CGFloat) -> CGFloat {
+        guard !run.isEmpty else { return 0 }
+        let attributed = NSAttributedString(string: run,
+                                            attributes: [.font: resolvedFont(size: fontSize)])
+        return Self.measure(attributed, width: .greatestFiniteMagnitude).width
     }
 
     private static func measure(_ text: NSAttributedString, width: CGFloat) -> CGSize {
