@@ -2,6 +2,8 @@
 
 A lightweight native macOS menu-bar app that displays your clipboard text in a fully-styleable, always-on-top floating overlay. Built as a replacement for the "Hotkey" app, adding the font/color/size/position controls it lacks.
 
+![ClipDisplay showing the clipboard text in its always-on-top overlay](docs/screenshot.png)
+
 - **Native Swift + AppKit** (SwiftUI for the settings form) — no Electron, ~0% idle CPU
 - **Agent app** — no Dock icon, just a menu-bar clipboard icon
 - Overlay floats above all windows, all Spaces, and full-screen apps
