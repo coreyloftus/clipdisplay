@@ -22,6 +22,8 @@ Open **Settings…** from the menu-bar icon. All changes apply to the overlay li
 
 Colors can optionally follow the system appearance: enable **Follow system light/dark mode** to configure separate text/background sets for light and dark mode — the overlay switches automatically when macOS does. Leave it off to lock a single set.
 
+**Text shadow** adds a soft drop shadow under the text, so it stays readable over any background. **Fill the active screen** centers the overlay on the screen under the pointer and grows the text to fill it. **Show & hide** sets a fade duration (0 = off) and an optional auto-hide delay.
+
 Sizing adapts to the clipboard (each behavior is a toggle): the overlay hugs small content and grows up to the configured max width/height; content that overflows at the chosen font size shrinks down to 10 pt to fit; a long unbroken run with nowhere to wrap (a URL, a token) shrinks to stay on one line rather than breaking mid-word; anything still overflowing (a big JSON blob, say) scrolls with an auto-hiding scrollbar.
 
 ## Build & run

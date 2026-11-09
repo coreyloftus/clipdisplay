@@ -43,7 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification,
                                                object: overlay,
                                                queue: .main) { [weak self] _ in
-            guard let self else { return }
+            // Fill-screen mode centers itself; don't overwrite the saved spot.
+            guard let self, !self.settings.fillScreen else { return }
             self.settings.saveOrigin(self.overlay.frame.origin)
         }
 
@@ -114,8 +115,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Default ⌥⇧Space — show the clipboard, or dismiss if already visible
         hotKeys.register(settings.showClipboardHotKey) { [weak self] in
             guard let self else { return }
-            if self.overlay.isVisible {
-                self.overlay.orderOut(nil)
+            if self.overlay.isShown {
+                self.overlay.dismiss()
             } else {
                 self.showClipboard()
             }
@@ -142,21 +143,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showClipboard() {
         let pasteboard = NSPasteboard.general
         if let text = pasteboard.string(forType: .string), !text.isEmpty {
-            overlay.update(text: text)
+            overlay.show(text: text)
         } else if pasteboard.canReadObject(forClasses: [NSImage.self], options: nil) {
             // v2 seam: image clipboard support lands here.
-            overlay.update(text: nil, placeholder: "— image on clipboard (not supported yet) —")
+            overlay.show(text: nil, placeholder: "— image on clipboard (not supported yet) —")
         } else {
-            overlay.update(text: nil)
+            overlay.show(text: nil)
         }
-        overlay.orderFrontRegardless()
     }
 
     @objc private func toggleOverlay() {
-        if overlay.isVisible {
-            overlay.orderOut(nil)
+        if overlay.isShown {
+            overlay.dismiss()
         } else {
-            overlay.orderFrontRegardless()
+            overlay.present()
         }
     }
 
