@@ -42,6 +42,14 @@ final class OverlayPanel: NSPanel {
     private var placeholderMessage = "— no text on clipboard —"
     private var isShowingPlaceholder: Bool { currentText?.isEmpty ?? true }
 
+    /// True from present() until dismiss(), including while fading. Use this, not isVisible.
+    private(set) var isShown = false
+    private var autoHideWork: DispatchWorkItem?
+    /// Screen the fill-screen layout covers; picked on each present().
+    private var targetScreen: NSScreen?
+    private var wasFillScreen = false
+    private static let fillScreenMargin: CGFloat = 40
+
     init(settings: SettingsModel) {
         self.settings = settings
         let contentRect = NSRect(x: 0, y: 0,
@@ -104,12 +112,69 @@ final class OverlayPanel: NSPanel {
 
     // MARK: - Content
 
-    /// Update the displayed text. Pass nil (with an optional placeholder message)
-    /// when the clipboard has no string — e.g. empty, or an image (v2 seam).
-    func update(text: String?, placeholder: String = "— no text on clipboard —") {
+    /// Set the displayed text and show the panel. Pass nil (with an optional placeholder
+    /// message) when the clipboard has no string — e.g. empty, or an image (v2 seam).
+    func show(text: String?, placeholder: String = "— no text on clipboard —") {
         currentText = text
         placeholderMessage = placeholder
+        present()
+    }
+
+    // MARK: - Show / hide
+
+    /// Lay out for the current screen, fade in, and arm the auto-hide timer.
+    func present() {
+        if settings.fillScreen {
+            targetScreen = Self.screenUnderMouse ?? screen ?? NSScreen.main
+        }
         layoutContent()
+
+        if !isVisible {
+            alphaValue = 0
+            orderFrontRegardless()
+        }
+        isShown = true
+        animateAlpha(to: 1, completion: nil)
+        scheduleAutoHide()
+    }
+
+    /// Fade out, then order out (unless present() ran again during the fade).
+    func dismiss() {
+        isShown = false
+        autoHideWork?.cancel()
+        autoHideWork = nil
+        animateAlpha(to: 0) { [weak self] in
+            guard let self, !self.isShown else { return }
+            self.orderOut(nil)
+            self.alphaValue = 1
+        }
+    }
+
+    private func animateAlpha(to value: CGFloat, completion: (() -> Void)?) {
+        let duration = settings.fadeDuration
+        guard duration >= 0.01 else {
+            alphaValue = value
+            completion?()
+            return
+        }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = duration
+            animator().alphaValue = value
+        }, completionHandler: completion)
+    }
+
+    private func scheduleAutoHide() {
+        autoHideWork?.cancel()
+        autoHideWork = nil
+        guard settings.autoHideSeconds > 0 else { return }
+        let work = DispatchWorkItem { [weak self] in self?.dismiss() }
+        autoHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + settings.autoHideSeconds, execute: work)
+    }
+
+    private static var screenUnderMouse: NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) }
     }
 
     /// Re-read all settings and restyle/resize the panel. Called live on every settings change.
@@ -127,19 +192,37 @@ final class OverlayPanel: NSPanel {
         scrollView.scrollingEnabled = settings.scrollOverflow
         scrollView.hasVerticalScroller = settings.scrollOverflow
 
+        if settings.fillScreen && targetScreen == nil {
+            targetScreen = screen ?? NSScreen.main
+        }
         layoutContent()
+
+        // Leaving fill-screen mode: go back to the user's saved spot.
+        if wasFillScreen && !settings.fillScreen {
+            targetScreen = nil
+            restorePosition()
+        }
+        wasFillScreen = settings.fillScreen
     }
 
     // MARK: - Adaptive sizing
 
     private func layoutContent() {
         let pad = max(0, settings.padding)
+        // Fill-screen mode: the max footprint is the target screen, like HotKey.
+        let fillScreen = settings.fillScreen ? (targetScreen ?? screen ?? NSScreen.main) : nil
+        let fillSize = fillScreen.map {
+            NSSize(width: $0.visibleFrame.width - 2 * Self.fillScreenMargin,
+                   height: $0.visibleFrame.height - 2 * Self.fillScreenMargin)
+        }
+        let maxSettingW = fillSize.map { Double($0.width) } ?? settings.overlayWidth
+        let maxSettingH = fillSize.map { Double($0.height) } ?? settings.overlayHeight
         // Min width/height are a floor; the settings width/height are the max
         // footprint. Clamp the floor so it can never exceed the max.
-        let minW = min(settings.minOverlayWidth, settings.overlayWidth)
-        let minH = min(settings.minOverlayHeight, settings.overlayHeight)
-        let maxW = max(settings.overlayWidth, minW)
-        let maxH = max(settings.overlayHeight, minH)
+        let minW = min(settings.minOverlayWidth, maxSettingW)
+        let minH = min(settings.minOverlayHeight, maxSettingH)
+        let maxW = max(maxSettingW, minW)
+        let maxH = max(maxSettingH, minH)
         let availableWidth = max(50, maxW - 2 * pad)
         let availableHeight = max(30, maxH - 2 * pad)
 
@@ -147,7 +230,8 @@ final class OverlayPanel: NSPanel {
         // Auto-size treats the chosen font size as the natural target and only
         // shrinks it to fit; a fixed-size overlay also grows the text (up to the
         // max font size) to fill the window — so the size tracks text length.
-        let maxFont = settings.autoSizeOverlay
+        // Fill-screen mode always grows, like a fixed-size overlay.
+        let maxFont = settings.autoSizeOverlay && fillScreen == nil
             ? max(minFont, settings.fontSize)
             : max(minFont, settings.maxFontSize)
 
@@ -155,31 +239,30 @@ final class OverlayPanel: NSPanel {
         // unbreakable run fits the width — otherwise word wrapping degrades into
         // a mid-word character wrap (see longestUnbreakableRun).
         let unbreakable = Self.longestUnbreakableRun(in: displayString)
-        func fits(_ size: CGFloat) -> Bool {
-            unbreakableWidth(unbreakable, fontSize: size) <= availableWidth
-                && measuredHeight(fontSize: size, width: availableWidth) <= availableHeight
+        // Overflow ratio (<= 1 fits); sqrt because wrapped text height grows about with size².
+        func overflow(_ size: CGFloat) -> CGFloat {
+            let widthRatio = unbreakableWidth(unbreakable, fontSize: size) / availableWidth
+            let heightRatio = measuredHeight(fontSize: size, width: availableWidth) / availableHeight
+            return max(widthRatio, heightRatio.squareRoot())
         }
 
         var fontSize = settings.fontSize
-        if settings.shrinkTextToFit {
-            if !fits(minFont) {
-                fontSize = minFont // even the smallest size overflows; scrolling/clipping takes over
-            } else if fits(maxFont) {
-                fontSize = maxFont // even the largest allowed size fits
-            } else {
-                // binary-search the largest size in [minFont, maxFont] that fits the max content area
-                var lo = minFont
-                var hi = maxFont
-                for _ in 0..<18 {
-                    let mid = (lo + hi) / 2
-                    if fits(mid) {
-                        lo = mid
-                    } else {
-                        hi = mid
-                    }
+        if settings.shrinkTextToFit || fillScreen != nil {
+            // Proportional fit (HotKey-style): scale by the overflow ratio and re-measure; minFont if nothing fits.
+            var best = minFont
+            var found = false
+            var size = maxFont
+            for _ in 0..<6 {
+                let ratio = overflow(size)
+                if ratio <= 1 {
+                    best = max(best, size); found = true
+                    if size >= maxFont || ratio > 0.98 { break }
                 }
-                fontSize = lo
+                let next = min(maxFont, max(minFont, size / ratio * 0.99))
+                if abs(next - size) < 0.25 || (found && next <= best) { break }
+                size = next
             }
+            fontSize = best
         }
 
         let attributed = attributedText(fontSize: fontSize)
@@ -199,7 +282,16 @@ final class OverlayPanel: NSPanel {
         textView.textContainerInset = NSSize(width: 0, height: centeringInset)
 
         textView.textStorage?.setAttributedString(attributed)
-        setFrameKeepingCenter(NSSize(width: panelWidth, height: panelHeight))
+        if let fillScreen {
+            let visible = fillScreen.visibleFrame
+            setFrame(NSRect(x: visible.midX - panelWidth / 2,
+                            y: visible.midY - panelHeight / 2,
+                            width: panelWidth,
+                            height: panelHeight),
+                     display: true)
+        } else {
+            setFrameKeepingCenter(NSSize(width: panelWidth, height: panelHeight))
+        }
         textView.scroll(.zero)
     }
 
@@ -214,12 +306,20 @@ final class OverlayPanel: NSPanel {
         let color = isShowingPlaceholder
             ? settings.effectiveTextColor.withAlphaComponent(0.5)
             : settings.effectiveTextColor
-        return NSAttributedString(string: displayString,
-                                  attributes: [
-                                      .font: resolvedFont(size: fontSize),
-                                      .foregroundColor: color,
-                                      .paragraphStyle: paragraph,
-                                  ])
+        var attributes: [NSAttributedString.Key: Any] = [
+            .font: resolvedFont(size: fontSize),
+            .foregroundColor: color,
+            .paragraphStyle: paragraph,
+        ]
+        if settings.textShadow {
+            let blur = max(0, settings.textShadowBlur)
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.6)
+            shadow.shadowOffset = NSSize(width: blur / 2, height: -blur / 2)
+            shadow.shadowBlurRadius = blur
+            attributes[.shadow] = shadow
+        }
+        return NSAttributedString(string: displayString, attributes: attributes)
     }
 
     private func measuredHeight(fontSize: CGFloat, width: CGFloat) -> CGFloat {

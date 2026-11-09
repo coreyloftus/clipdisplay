@@ -54,6 +54,11 @@ final class SettingsModel: ObservableObject {
     @Published var autoSizeOverlay: Bool = Defaults.autoSizeOverlay { didSet { changed() } }
     @Published var shrinkTextToFit: Bool = Defaults.shrinkTextToFit { didSet { changed() } }
     @Published var scrollOverflow: Bool = Defaults.scrollOverflow { didSet { changed() } }
+    @Published var textShadow: Bool = Defaults.textShadow { didSet { changed() } }
+    @Published var textShadowBlur: Double = Defaults.textShadowBlur { didSet { changed() } }
+    @Published var fillScreen: Bool = Defaults.fillScreen { didSet { changed() } }
+    @Published var fadeDuration: Double = Defaults.fadeDuration { didSet { changed() } }
+    @Published var autoHideSeconds: Double = Defaults.autoHideSeconds { didSet { changed() } }
     @Published var showClipboardHotKey: HotKeyCombo = .defaultShowClipboard { didSet { hotKeysChanged() } }
     @Published var toggleOverlayHotKey: HotKeyCombo = .defaultToggleOverlay { didSet { hotKeysChanged() } }
 
@@ -80,6 +85,11 @@ final class SettingsModel: ObservableObject {
         static let autoSizeOverlay = true
         static let shrinkTextToFit = true
         static let scrollOverflow = true
+        static let textShadow = false
+        static let textShadowBlur: Double = 6
+        static let fillScreen = false
+        static let fadeDuration: Double = 0.15
+        static let autoHideSeconds: Double = 0
     }
 
     private enum Key {
@@ -105,6 +115,11 @@ final class SettingsModel: ObservableObject {
         static let autoSizeOverlay = "autoSizeOverlay"
         static let shrinkTextToFit = "shrinkTextToFit"
         static let scrollOverflow = "scrollOverflow"
+        static let textShadow = "textShadow"
+        static let textShadowBlur = "textShadowBlur"
+        static let fillScreen = "fillScreen"
+        static let fadeDuration = "fadeDuration"
+        static let autoHideSeconds = "autoHideSeconds"
         static let hasOrigin = "panelHasOrigin"
         static let originX = "panelOriginX"
         static let originY = "panelOriginY"
@@ -181,6 +196,11 @@ final class SettingsModel: ObservableObject {
         if d.object(forKey: Key.autoSizeOverlay) != nil { autoSizeOverlay = d.bool(forKey: Key.autoSizeOverlay) }
         if d.object(forKey: Key.shrinkTextToFit) != nil { shrinkTextToFit = d.bool(forKey: Key.shrinkTextToFit) }
         if d.object(forKey: Key.scrollOverflow) != nil { scrollOverflow = d.bool(forKey: Key.scrollOverflow) }
+        if d.object(forKey: Key.textShadow) != nil { textShadow = d.bool(forKey: Key.textShadow) }
+        if d.object(forKey: Key.textShadowBlur) != nil { textShadowBlur = d.double(forKey: Key.textShadowBlur) }
+        if d.object(forKey: Key.fillScreen) != nil { fillScreen = d.bool(forKey: Key.fillScreen) }
+        if d.object(forKey: Key.fadeDuration) != nil { fadeDuration = d.double(forKey: Key.fadeDuration) }
+        if d.object(forKey: Key.autoHideSeconds) != nil { autoHideSeconds = d.double(forKey: Key.autoHideSeconds) }
         if d.object(forKey: Key.showHotKeyCode) != nil {
             showClipboardHotKey = HotKeyCombo(keyCode: UInt32(d.integer(forKey: Key.showHotKeyCode)),
                                               modifiers: UInt32(d.integer(forKey: Key.showHotKeyModifiers)))
@@ -215,6 +235,11 @@ final class SettingsModel: ObservableObject {
         d.set(autoSizeOverlay, forKey: Key.autoSizeOverlay)
         d.set(shrinkTextToFit, forKey: Key.shrinkTextToFit)
         d.set(scrollOverflow, forKey: Key.scrollOverflow)
+        d.set(textShadow, forKey: Key.textShadow)
+        d.set(textShadowBlur, forKey: Key.textShadowBlur)
+        d.set(fillScreen, forKey: Key.fillScreen)
+        d.set(fadeDuration, forKey: Key.fadeDuration)
+        d.set(autoHideSeconds, forKey: Key.autoHideSeconds)
         d.set(Int(showClipboardHotKey.keyCode), forKey: Key.showHotKeyCode)
         d.set(Int(showClipboardHotKey.modifiers), forKey: Key.showHotKeyModifiers)
         d.set(Int(toggleOverlayHotKey.keyCode), forKey: Key.toggleHotKeyCode)

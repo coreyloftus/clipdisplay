@@ -35,6 +35,18 @@ struct SettingsView: View {
 
                 Toggle("Bold", isOn: $settings.bold)
 
+                Toggle("Text shadow", isOn: $settings.textShadow)
+                if settings.textShadow {
+                    LabeledContent("Shadow blur") {
+                        HStack {
+                            Slider(value: $settings.textShadowBlur, in: 1...20)
+                            Text("\(Int(settings.textShadowBlur)) pt")
+                                .monospacedDigit()
+                                .frame(width: 52, alignment: .trailing)
+                        }
+                    }
+                }
+
                 Picker("Alignment", selection: $settings.alignment) {
                     ForEach(TextAlignmentSetting.allCases) { alignment in
                         Text(alignment.label).tag(alignment)
@@ -73,6 +85,7 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Fill the active screen", isOn: $settings.fillScreen)
                 Toggle("Auto-size overlay to content", isOn: $settings.autoSizeOverlay)
                 Toggle("Intelligently resize font to fit", isOn: $settings.shrinkTextToFit)
 
@@ -129,33 +142,57 @@ struct SettingsView: View {
                     }
                 }
 
-                LabeledContent(settings.autoSizeOverlay ? "Max width" : "Overlay width") {
-                    HStack {
-                        TextField("Width", value: $settings.overlayWidth, format: .number.precision(.fractionLength(0)))
-                            .labelsHidden()
-                            .frame(width: 64)
-                        Stepper("Width", value: $settings.overlayWidth, in: 100...maxWidth, step: 10)
-                            .labelsHidden()
+                if !settings.fillScreen {
+                    LabeledContent(settings.autoSizeOverlay ? "Max width" : "Overlay width") {
+                        HStack {
+                            TextField("Width", value: $settings.overlayWidth, format: .number.precision(.fractionLength(0)))
+                                .labelsHidden()
+                                .frame(width: 64)
+                            Stepper("Width", value: $settings.overlayWidth, in: 100...maxWidth, step: 10)
+                                .labelsHidden()
+                        }
                     }
-                }
 
-                LabeledContent(settings.autoSizeOverlay ? "Max height" : "Overlay height") {
-                    HStack {
-                        TextField("Height", value: $settings.overlayHeight, format: .number.precision(.fractionLength(0)))
-                            .labelsHidden()
-                            .frame(width: 64)
-                        Stepper("Height", value: $settings.overlayHeight, in: 60...maxHeight, step: 10)
-                            .labelsHidden()
+                    LabeledContent(settings.autoSizeOverlay ? "Max height" : "Overlay height") {
+                        HStack {
+                            TextField("Height", value: $settings.overlayHeight, format: .number.precision(.fractionLength(0)))
+                                .labelsHidden()
+                                .frame(width: 64)
+                            Stepper("Height", value: $settings.overlayHeight, in: 60...maxHeight, step: 10)
+                                .labelsHidden()
+                        }
                     }
-                }
 
-                Button("Reset Position") {
-                    settings.resetPosition()
+                    Button("Reset Position") {
+                        settings.resetPosition()
+                    }
                 }
             } header: {
                 Text("Layout")
             } footer: {
-                Text("Auto-size hugs the content between the min and max width/height. Intelligent resize fits the font to the text length — shrinking long text and (for a fixed-size overlay) growing short text — within the min/max font sizes. Anything still too large scrolls.")
+                Text(settings.fillScreen
+                     ? "Fill-screen centers the overlay on the screen under the pointer and grows the text up to the max font size."
+                     : "Auto-size hugs the content between the min and max width/height. Intelligent resize fits the font to the text length — shrinking long text and (for a fixed-size overlay) growing short text — within the min/max font sizes. Anything still too large scrolls.")
+            }
+
+            Section("Show & hide") {
+                LabeledContent("Fade duration") {
+                    HStack {
+                        Slider(value: $settings.fadeDuration, in: 0...1)
+                        Text(settings.fadeDuration < 0.01 ? "Off" : String(format: "%.2f s", settings.fadeDuration))
+                            .monospacedDigit()
+                            .frame(width: 52, alignment: .trailing)
+                    }
+                }
+
+                LabeledContent("Auto-hide after") {
+                    HStack {
+                        Slider(value: $settings.autoHideSeconds, in: 0...60, step: 1)
+                        Text(settings.autoHideSeconds < 1 ? "Never" : "\(Int(settings.autoHideSeconds)) s")
+                            .monospacedDigit()
+                            .frame(width: 52, alignment: .trailing)
+                    }
+                }
             }
 
             Section {
