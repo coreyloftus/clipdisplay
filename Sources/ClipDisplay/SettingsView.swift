@@ -173,6 +173,13 @@ struct SettingsView: View {
             } footer: {
                 Text("Click a shortcut, then press a new key combination including ⌘, ⌥, or ⌃. Press ⎋ to cancel. Changes apply immediately.")
             }
+
+            Section("Updates") {
+                LabeledContent("Version", value: Updater.versionDescription)
+                Button("Check for Update…") {
+                    Updater.checkForUpdates()
+                }
+            }
         }
         .formStyle(.grouped)
         .frame(minWidth: 440, minHeight: 560)
